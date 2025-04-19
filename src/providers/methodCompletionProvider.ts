@@ -1,49 +1,49 @@
 import * as vscode from 'vscode';
+import { stencilSelector } from '../utils/selectors';
+import * as logger from '../utils/logger';
 
+/**
+ * Suggests @Method() methods in TS/JS code
+ */
 export function registerMethodCompletionProvider(
   context: vscode.ExtensionContext,
   json: any,
-  tagMap: Map<string,string>,
+  tagMap: Map<string, string>,
   sortPrefix: string
 ) {
-  const selector: vscode.DocumentSelector = [
-    { language: 'typescriptreact', scheme: 'file' },
-    { language: 'javascriptreact', scheme: 'file' },
-    { language: 'typescript', scheme: 'file' },
-    { language: 'javascript', scheme: 'file' },
-  ];
-
   const provider: vscode.CompletionItemProvider = {
     provideCompletionItems(document, position) {
-      const line = document.lineAt(position).text.substring(0, position.character);
-      // Looking for something like `<my-tag>.` or `tagRef.current.`
-      // For simplicity — take the word before the dot
-      const m = line.match(/([\w-]+)\.$/);
-      if (!m) return;
-      const tagOrRef = m[1];
-
-      // If this is our tag name
-      let comp = json.tags.find((t:any) => t.name === tagOrRef);
-      // Or if this is a variable from querySelector('my-tag')
-      if (!comp) {
-        const q = tagOrRef.match(/querySelector<.*>\('([\w-]+)'\)/);
-        if (q) comp = json.tags.find((t:any) => t.name === q[1]);
+      // only in TS/JS files
+      if (!['typescriptreact', 'javascriptreact'].includes(document.languageId)) {
+        return;
       }
-      if (!comp || !comp.methods) return;
-
-      const items: vscode.CompletionItem[] = [];
-      for (const method of comp.methods) {
-        const it = new vscode.CompletionItem(method.name, vscode.CompletionItemKind.Method);
-        it.insertText = new vscode.SnippetString(`${method.name}($1)`);
-        it.documentation = new vscode.MarkdownString(method.description);
-        it.sortText = sortPrefix + method.name;
-        items.push(it);
+      const word = document.getText(document.getWordRangeAtPosition(position));
+      // find methods that start with current word
+      const suggestions: vscode.CompletionItem[] = [];
+      for (const comp of json.tags) {
+        for (const m of comp.methods) {
+          if (m.name.startsWith(word)) {
+            const it = new vscode.CompletionItem(
+              m.name + '()', vscode.CompletionItemKind.Method
+            );
+            it.insertText = new vscode.SnippetString(`${m.name}($0)`);
+            it.documentation = new vscode.MarkdownString(m.description);
+            if (m.signature) it.detail = m.signature;
+            it.sortText = sortPrefix + m.name;
+            suggestions.push(it);
+          }
+        }
       }
-      return items;
+      logger.info(`MethodCompletion: ${suggestions.length} items`);
+      return suggestions;
     }
   };
 
   context.subscriptions.push(
-    vscode.languages.registerCompletionItemProvider(selector, provider, '.')
+    vscode.languages.registerCompletionItemProvider(
+      stencilSelector,
+      provider,
+      '.'  // trigger on dot
+    )
   );
 }

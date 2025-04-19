@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { stencilSelector } from '../utils/selectors';
+import * as logger from '../utils/logger';
 
 /**
  * Registers Go To Definition for Stencil tags.
@@ -10,18 +12,11 @@ export function registerDefinitionProvider(
   root: string,
   tagMap: Map<string, string>
 ) {
-  const selector: vscode.DocumentSelector = [
-    { language: 'html', scheme: 'file' },
-    { language: 'javascriptreact', scheme: 'file' },
-    { language: 'typescriptreact', scheme: 'file' }
-  ];
-
   const provider: vscode.DefinitionProvider = {
     provideDefinition(document, position) {
-      // match tag name under cursor: "<my-tag"
       const wordRange = document.getWordRangeAtPosition(
         position,
-        /(?<=<)\w[\w-]*/  // lookbehind for '<', then tag chars
+        /(?<=<)\w[\w-]*/  // lookbehind for '<'
       );
       if (!wordRange) {
         return;
@@ -33,14 +28,15 @@ export function registerDefinitionProvider(
       }
       const fullPath = path.resolve(root, rel);
       if (!fs.existsSync(fullPath)) {
-        vscode.window.showWarningMessage(`[StencilNav] File not found: ${rel}`);
+        logger.warn(`Component file not found: ${rel}`);
         return;
       }
+      logger.info(`GoToDef requested for <${tag}>, opening ${rel}`);
       return new vscode.Location(vscode.Uri.file(fullPath), new vscode.Position(0, 0));
     }
   };
 
   context.subscriptions.push(
-    vscode.languages.registerDefinitionProvider(selector, provider)
+    vscode.languages.registerDefinitionProvider(stencilSelector, provider)
   );
 }

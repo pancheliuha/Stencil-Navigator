@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { stencilSelector } from '../utils/selectors';
+import * as logger from '../utils/logger';
 
 /**
  * Registers DocumentLinkProvider so that <my-tag> is underlined and clickable.
@@ -9,12 +11,6 @@ export function registerLinkProvider(
   root: string,
   tagMap: Map<string, string>
 ) {
-  const selector: vscode.DocumentSelector = [
-    { language: 'html', scheme: 'file' },
-    { language: 'javascriptreact', scheme: 'file' },
-    { language: 'typescriptreact', scheme: 'file' }
-  ];
-
   const provider: vscode.DocumentLinkProvider = {
     provideDocumentLinks(document) {
       const text = document.getText();
@@ -26,20 +22,19 @@ export function registerLinkProvider(
         const rel = tagMap.get(tag);
         if (!rel) continue;
         const fullPath = path.resolve(root, rel);
-        const start = document.positionAt(m.index + 1);  // after '<'
+        const start = document.positionAt(m.index + 1);
         const end = document.positionAt(m.index + 1 + tag.length);
-        links.push(
-          new vscode.DocumentLink(
-            new vscode.Range(start, end),
-            vscode.Uri.file(fullPath)
-          )
-        );
+        links.push(new vscode.DocumentLink(
+          new vscode.Range(start, end),
+          vscode.Uri.file(fullPath)
+        ));
       }
+      logger.info(`DocumentLinkProvider: found ${links.length} links in ${path.basename(document.uri.fsPath)}`);
       return links;
     }
   };
 
   context.subscriptions.push(
-    vscode.languages.registerDocumentLinkProvider(selector, provider)
+    vscode.languages.registerDocumentLinkProvider(stencilSelector, provider)
   );
 }
