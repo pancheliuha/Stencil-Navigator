@@ -1,0 +1,65 @@
+{
+  "name": "stencil-navigator",
+  "displayName": "Stencil Navigator",
+  "description": "Go to Definition, Hover and Autocomplete for Stencil.js components",
+  "version": "1.0.1",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onLanguage:html",
+    "onLanguage:javascriptreact",
+    "onLanguage:typescriptreact",
+    "onStartupFinished",
+    "onCommand:stencilNavigator.generateData",
+    "onCommand:stencilNavigator.reloadTags",
+    "onCommand:stencilNavigator.findUsages",
+    "onCommand:stencilNavigator.welcome"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "stencilNavigator.reloadTags",
+        "title": "Stencil Navigator: Reload Tags"
+      },
+      {
+        "command": "stencilNavigator.generateData",
+        "title": "Stencil Navigator: Generate Data"
+      },
+      {
+        "command": "stencilNavigator.welcome",
+        "title": "Stencil Navigator: Welcome"
+      },
+      {
+        "command": "stencilNavigator.findUsages",
+        "title": "Stencil Navigator: Find Usages"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Stencil Navigator",
+      "properties": {
+        "stencilNavigator.dataSaveLocation": {
+          "type": "string",
+          "enum": ["projectRoot", "extensionStorage"],
+          "default": "projectRoot",
+          "description": "Where to save generated vscode-data.json"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "prepublishOnly": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "typescript": "^4.8.4",
+    "ts-morph": "^20.0.0",
+    "vsce": "^2.15.0"
+  },
+  "dependencies": {}
+}
