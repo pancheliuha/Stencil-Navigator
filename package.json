@@ -3,8 +3,12 @@
   "displayName": "Stencil Navigator",
   "publisher": "ViktorPancheliuha",
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pancheliuha/Stencil-Navigator.git"
+  },
   "engines": {
-    "vscode": "^1.83.0"
+    "vscode": "^1.99.0"
   },
   "_moduleAliases": {
     "vscode": "src/__mocks__/vscode.ts"
