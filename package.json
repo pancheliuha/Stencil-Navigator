@@ -10,6 +10,15 @@
   "engines": {
     "vscode": "^1.99.0"
   },
+  "icon": "images/icon.png",
+  "categories": [
+    "Programming Languages",
+    "Snippets"
+  ],
+  "galleryBanner": {
+    "color": "#0f4c81",
+    "theme": "dark"
+  },
   "_moduleAliases": {
     "vscode": "src/__mocks__/vscode.ts"
   },
