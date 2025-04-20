@@ -3,17 +3,20 @@ import * as path from 'path';
 import { stencilSelector } from '../utils/selectors';
 import * as logger from '../utils/logger';
 
-export function registerHoverProvider(
-  context: vscode.ExtensionContext,
+export function createHoverProvider(
   root: string,
   json: any,
   tagMap: Map<string, string>
-) {
-  const provider: vscode.HoverProvider = {
-    provideHover(document, position) {
+): vscode.HoverProvider {
+  return {
+    provideHover(
+      document: vscode.TextDocument,
+      position: vscode.Position,
+      token: vscode.CancellationToken
+    ): vscode.ProviderResult<vscode.Hover> {
       const wordRange = document.getWordRangeAtPosition(
         position,
-        /(?<=<)\w[\w-]*/  // tag hover
+        /(?<=<)\w[\w-]*/
       );
       if (!wordRange) return;
 
@@ -22,7 +25,6 @@ export function registerHoverProvider(
       const comp = json.tags.find((t: any) => t.name === tag);
       if (!comp) return;
 
-      const fullPath = path.resolve(root, rel || '');
       const md = new vscode.MarkdownString();
       md.appendCodeblock(`<${tag}>`, 'html');
       if (comp.description.value) {
@@ -30,11 +32,19 @@ export function registerHoverProvider(
       }
       md.appendMarkdown(`\n\n**Path:** \`${rel}\``);
 
-      logger.info(`Hover for <${tag}> from ${path.basename(document.uri.fsPath)}`);
+      logger.info(`Hover for <${tag}>`);
       return new vscode.Hover(md, wordRange);
     }
   };
+}
 
+export function registerHoverProvider(
+  context: vscode.ExtensionContext,
+  root: string,
+  json: any,
+  tagMap: Map<string, string>
+) {
+  const provider = createHoverProvider(root, json, tagMap);
   context.subscriptions.push(
     vscode.languages.registerHoverProvider(stencilSelector, provider)
   );

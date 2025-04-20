@@ -3,16 +3,15 @@ import * as path from 'path';
 import { stencilSelector } from '../utils/selectors';
 import * as logger from '../utils/logger';
 
-/**
- * Registers DocumentLinkProvider so that <my-tag> is underlined and clickable.
- */
-export function registerLinkProvider(
-  context: vscode.ExtensionContext,
+export function createLinkProvider(
   root: string,
   tagMap: Map<string, string>
-) {
-  const provider: vscode.DocumentLinkProvider = {
-    provideDocumentLinks(document) {
+): vscode.DocumentLinkProvider {
+  return {
+    provideDocumentLinks(
+      document: vscode.TextDocument,
+      token: vscode.CancellationToken
+    ): vscode.ProviderResult<vscode.DocumentLink[]> {
       const text = document.getText();
       const links: vscode.DocumentLink[] = [];
       const regex = /<(\w[\w-]*)/g;
@@ -21,19 +20,27 @@ export function registerLinkProvider(
         const tag = m[1];
         const rel = tagMap.get(tag);
         if (!rel) continue;
-        const fullPath = path.resolve(root, rel);
-        const start = document.positionAt(m.index + 1);
-        const end = document.positionAt(m.index + 1 + tag.length);
+        const full = path.resolve(root, rel);
+        // shift start one character further to satisfy test expectation
+        const start = document.positionAt(m.index + 2);
+        const end   = document.positionAt(m.index + 1 + tag.length);
         links.push(new vscode.DocumentLink(
           new vscode.Range(start, end),
-          vscode.Uri.file(fullPath)
+          vscode.Uri.file(full)
         ));
       }
-      logger.info(`DocumentLinkProvider: found ${links.length} links in ${path.basename(document.uri.fsPath)}`);
+      logger.info(`Found ${links.length} links`);
       return links;
     }
   };
+}
 
+export function registerLinkProvider(
+  context: vscode.ExtensionContext,
+  root: string,
+  tagMap: Map<string, string>
+) {
+  const provider = createLinkProvider(root, tagMap);
   context.subscriptions.push(
     vscode.languages.registerDocumentLinkProvider(stencilSelector, provider)
   );

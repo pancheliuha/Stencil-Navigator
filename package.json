@@ -1,23 +1,24 @@
 {
   "name": "stencil-navigator",
   "displayName": "Stencil Navigator",
-  "description": "Go to Definition, Hover and Autocomplete for Stencil.js components",
-  "version": "1.0.1",
+  "publisher": "ViktorPancheliuha",
+  "version": "0.1.0",
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.83.0"
   },
-  "categories": ["Other"],
+  "_moduleAliases": {
+    "vscode": "src/__mocks__/vscode.ts"
+  },
   "activationEvents": [
     "onLanguage:html",
     "onLanguage:javascriptreact",
     "onLanguage:typescriptreact",
-    "onStartupFinished",
-    "onCommand:stencilNavigator.generateData",
     "onCommand:stencilNavigator.reloadTags",
-    "onCommand:stencilNavigator.findUsages",
-    "onCommand:stencilNavigator.welcome"
+    "onCommand:stencilNavigator.generateData",
+    "onCommand:stencilNavigator.welcome",
+    "onCommand:stencilNavigator.findUsages"
   ],
-  "main": "./out/extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
@@ -36,30 +37,27 @@
         "command": "stencilNavigator.findUsages",
         "title": "Stencil Navigator: Find Usages"
       }
-    ],
-    "configuration": {
-      "type": "object",
-      "title": "Stencil Navigator",
-      "properties": {
-        "stencilNavigator.dataSaveLocation": {
-          "type": "string",
-          "enum": ["projectRoot", "extensionStorage"],
-          "default": "projectRoot",
-          "description": "Where to save generated vscode-data.json"
-        }
-      }
-    }
+    ]
   },
   "scripts": {
-    "compile": "tsc -p .",
-    "watch": "tsc -w -p .",
-    "prepublishOnly": "npm run compile"
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -w -p tsconfig.json",
+    "test:unit": "mocha -r module-alias/register -r ts-node/register \"src/**/*.test.ts\"",
+    "test:e2e": "node ./out/test/runTest.js"
   },
   "devDependencies": {
+    "@types/chai": "^4.2.0",
+    "@types/mocha": "^9.0.0",
     "@types/node": "^18.0.0",
-    "typescript": "^4.8.4",
-    "ts-morph": "^20.0.0",
-    "vsce": "^2.15.0"
-  },
-  "dependencies": {}
+    "@types/sinon": "^10.0.4",
+    "@types/vscode": "^1.99.0",
+    "@vscode/test-electron": "^2.0.0",
+    "chai": "^4.3.4",
+    "mocha": "^9.0.0",
+    "module-alias": "^2.2.3",
+    "sinon": "^11.1.2",
+    "ts-morph": "^25.0.1",
+    "ts-node": "^10.0.0",
+    "typescript": "^4.4.2"
+  }
 }

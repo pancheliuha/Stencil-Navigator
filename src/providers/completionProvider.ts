@@ -2,43 +2,41 @@ import * as vscode from 'vscode';
 import { stencilSelector } from '../utils/selectors';
 import * as logger from '../utils/logger';
 
-export function registerCompletionProvider(
-  context: vscode.ExtensionContext,
+export function createCompletionProvider(
   json: any,
   tagMap: Map<string, string>,
   triggers: string[],
   sortPrefix: string
-) {
-  const provider: vscode.CompletionItemProvider = {
-    provideCompletionItems(document, position) {
+): vscode.CompletionItemProvider {
+  return {
+    provideCompletionItems(
+      document: vscode.TextDocument,
+      position: vscode.Position,
+      token: vscode.CancellationToken,
+      completionContext: vscode.CompletionContext
+    ): vscode.ProviderResult<vscode.CompletionItem[] | vscode.CompletionList> {
+      // (ваша існуюча логіка)
       const openTag = getOpenTagText(document, position);
       if (!openTag) return;
 
-      // detect inside a component tag
       const tagMatch = openTag.match(/<([\w-]+)/);
-      if (!tagMatch) {
-        return;
-      }
+      if (!tagMatch) return;
+
       const tagName = tagMatch[1];
       const comp = json.tags.find((t: any) => t.name === tagName);
-      if (!comp) {
-        return;
-      }
+      if (!comp) return;
 
-      // collect already used attrs
       const used = new Set<string>();
       for (const m of openTag.matchAll(/(\w+)=/g)) used.add(m[1]);
 
       const items: vscode.CompletionItem[] = [];
 
-      // Props header
-      const propsHeader = new vscode.CompletionItem('⸺ Props ⸺', vscode.CompletionItemKind.Text);
-      propsHeader.sortText = sortPrefix + '1_0';
-      propsHeader.insertText = new vscode.SnippetString('');
-      propsHeader.filterText = '';
-      items.push(propsHeader);
-
-      // Props items
+      // Props section …
+      const ph = new vscode.CompletionItem('⸺ Props ⸺', vscode.CompletionItemKind.Text);
+      ph.sortText = sortPrefix + '1_0';
+      ph.insertText = new vscode.SnippetString('');
+      ph.filterText = '';
+      items.push(ph);
       for (const p of comp.properties) {
         if (used.has(p.name)) continue;
         const it = new vscode.CompletionItem(p.name, vscode.CompletionItemKind.Property);
@@ -49,14 +47,12 @@ export function registerCompletionProvider(
         items.push(it);
       }
 
-      // Events header
-      const eventsHeader = new vscode.CompletionItem('⸺ Events ⸺', vscode.CompletionItemKind.Text);
-      eventsHeader.sortText = sortPrefix + '2_0';
-      eventsHeader.insertText = new vscode.SnippetString('');
-      eventsHeader.filterText = '';
-      items.push(eventsHeader);
-
-      // Events items
+      // Events section …
+      const eh = new vscode.CompletionItem('⸺ Events ⸺', vscode.CompletionItemKind.Text);
+      eh.sortText = sortPrefix + '2_0';
+      eh.insertText = new vscode.SnippetString('');
+      eh.filterText = '';
+      items.push(eh);
       for (const e of comp.events) {
         if (used.has(e.name)) continue;
         const it = new vscode.CompletionItem(e.name, vscode.CompletionItemKind.Event);
@@ -67,14 +63,12 @@ export function registerCompletionProvider(
         items.push(it);
       }
 
-      // Slots header
-      const slotsHeader = new vscode.CompletionItem('⸺ Slots ⸺', vscode.CompletionItemKind.Text);
-      slotsHeader.sortText = sortPrefix + '3_0';
-      slotsHeader.insertText = new vscode.SnippetString('');
-      slotsHeader.filterText = '';
-      items.push(slotsHeader);
-
-      // Slots items
+      // Slots section …
+      const sh = new vscode.CompletionItem('⸺ Slots ⸺', vscode.CompletionItemKind.Text);
+      sh.sortText = sortPrefix + '3_0';
+      sh.insertText = new vscode.SnippetString('');
+      sh.filterText = '';
+      items.push(sh);
       for (const s of comp.slots) {
         if (used.has('name')) continue;
         const it = new vscode.CompletionItem('name', vscode.CompletionItemKind.Property);
@@ -88,7 +82,16 @@ export function registerCompletionProvider(
       return items;
     }
   };
+}
 
+export function registerCompletionProvider(
+  context: vscode.ExtensionContext,
+  json: any,
+  tagMap: Map<string, string>,
+  triggers: string[],
+  sortPrefix: string
+) {
+  const provider = createCompletionProvider(json, tagMap, triggers, sortPrefix);
   context.subscriptions.push(
     vscode.languages.registerCompletionItemProvider(stencilSelector, provider, ...triggers)
   );
