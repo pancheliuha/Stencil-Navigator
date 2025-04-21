@@ -2,50 +2,46 @@
 
 ## 1. Go to Definition
 
-- **Action**: Ctrl+Click or F12 on `<my-component>`.  
-- **Result**: Opens `my-component.tsx`.
+- Hover over any custom tag, e.g. `<my-component>`.
+- **F12** or **Ctrl+Click** on the tag name to jump to its Stencil source file.
 
-## 2. Autocomplete
+![Go to Definition Demo](./assets/go-to-definition.gif)
 
-### Component Tags
+## 2. Hover Tooltips
 
-- Type `<` → select a component → tag snippet.
+- Hover displays component description from JSDoc above the class.
 
-### Props / Events / Slots / Methods
+```html
+<my-component>
+      ^ hover here
+```
 
-- Inside `<my-component ` → **Space** or **Ctrl+Space** → see grouped list:
-  - **⸺ Props ⸺**  
-    `foo="…"`
-  - **⸺ Events ⸺**  
-    `onBar="…"`
-  - **⸺ Slots ⸺**  
-    `name="slotName"`
-  - **⸺ Methods ⸺**  
-    `doSomething()`
+![Hover Demo](./assets/hover.gif)
 
-## 3. Hover
+## 3. IntelliSense
 
-- Hover over `<my-component>` → tooltip:
-  ```html
-  ```html
-  <my-component>
+- Type `<` and start typing a tag to see component suggestions.
+- Inside a tag, after a space, props/events/methods/slots are suggested.
+
+```jsx
+<my-component  // triggers props completion
+```
+
+![Completion Demo](./assets/completion.gif)
+
+## 4. Find Usages (CodeLens)
+
+- Open a Stencil source file.
+- Above the `@Component({ tag: 'my-component' })` line you’ll see:
+
   ```
-  Component docs...
-  **Path:** `src/components/my-component.tsx`
+  🔍 Find <my-component> usages
   ```
 
-## 4. Document Links
+- Click to scan your workspace and open the References view.
 
-- Hover near `<my-component>` → click link icon → jump to source.
+![Find Usages CodeLens](./assets/find-references.gif)
 
-## 5. Find Usages (CodeLens)
+---
 
-- Above component class:
-  ```ts
-  // 🔍 Find <my-component> usages
-  ```
-- Click to list all usage locations.
-
-## 6. Outline Integration
-
-- Open Outline pane → under “Stencil Navigator” → see Props, Events, Slots.
+_For advanced configuration see [CONFIGURATION](../docs/CONFIGURATION.md)._

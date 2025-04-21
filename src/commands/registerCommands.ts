@@ -1,106 +1,132 @@
-// src/commands/registerCommands.ts
-
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { generateDataFile } from '../utils/generateData';
 import { loadProjectConfig } from '../utils/loadProjectConfig';
-import { showWelcomePanel } from '../panels/welcomePanel';
+import { generateDataFile } from '../utils/generateData';
 
+/**
+ * Registers all commands:
+ *  - stencilNavigator.reloadTags
+ *  - stencilNavigator.generateData
+ *  - stencilNavigator.welcome
+ *  - stencilNavigator.findUsages
+ */
 export function registerCommands(
   context: vscode.ExtensionContext,
   root: string,
   tagMap: Map<string, string>
 ) {
-  // Reload stencil-data.json
-  const reloadCommand = vscode.commands.registerCommand(
-    'stencilNavigator.reloadTags',
-    async () => {
-      const cfg = loadProjectConfig(root);
+  const cfg = loadProjectConfig(root);
+
+  // reloadTags
+  context.subscriptions.push(
+    vscode.commands.registerCommand('stencilNavigator.reloadTags', async () => {
       try {
-        await generateDataFile(root, cfg.dataSaveLocation, context.globalStorageUri);
-        vscode.window.showInformationMessage('🔁 Stencil tags reloaded!');
-      } catch (e) {
-        vscode.window.showErrorMessage('Failed to reload stencil tags.');
-        console.error(e);
-      }
-    }
-  );
-  context.subscriptions.push(reloadCommand);
-
-  // Generate stencil-data.json manually
-  const generateCommand = vscode.commands.registerCommand(
-    'stencilNavigator.generateData',
-    async () => {
-      const cfg = loadProjectConfig(root);
-      try {
-        await generateDataFile(root, cfg.dataSaveLocation, context.globalStorageUri);
-        vscode.window.showInformationMessage('Stencil data file generated.');
-      } catch (e) {
-        vscode.window.showErrorMessage('Failed to generate stencil data file.');
-        console.error(e);
-      }
-    }
-  );
-  context.subscriptions.push(generateCommand);
-
-  // Show welcome panel on demand
-  const welcomeCommand = vscode.commands.registerCommand(
-    'stencilNavigator.welcome',
-    () => {
-      showWelcomePanel(context.extensionUri);
-    }
-  );
-  context.subscriptions.push(welcomeCommand);
-
-  // Find usages of a component tag (manual search)
-  const findUsagesCommand = vscode.commands.registerCommand(
-    'stencilNavigator.findUsages',
-    async (tagName: string) => {
-      // build regex to match "<tagName " or "<tagName>"
-      const pattern = new RegExp(`<${tagName}(\\s|>)`, 'gi');
-      const results: vscode.Location[] = [];
-
-      // find candidate files
-      const files = await vscode.workspace.findFiles(
-        '**/*.{tsx,jsx,html}',
-        '**/node_modules/**'
-      );
-
-      // scan each file for the first occurrence
-      for (const uri of files) {
-        try {
-          const doc = await vscode.workspace.openTextDocument(uri);
-          const text = doc.getText();
-          const match = pattern.exec(text);
-          if (match) {
-            const pos = doc.positionAt(match.index);
-            results.push(new vscode.Location(uri, pos));
-          }
-        } catch (e) {
-          console.error('[StencilNav] Error scanning file for usages:', uri.fsPath, e);
+        const { tagMap: newMap } = await generateDataFile(
+          root,
+          cfg.dataSaveLocation,
+          context.globalStorageUri
+        );
+        tagMap.clear();
+        for (const [k, v] of newMap.entries()) {
+          tagMap.set(k, v);
         }
+        vscode.window.showInformationMessage('Stencil tags reloaded!');
+      } catch (err: any) {
+        vscode.window.showErrorMessage('Failed to reload tags: ' + err.message);
       }
-
-      if (results.length === 0) {
-        vscode.window.showInformationMessage(`No usages found for <${tagName}>`);
-        return;
-      }
-
-      // prepare QuickPick items
-      const items = results.map(loc => ({
-        label: `${path.relative(root, loc.uri.fsPath)}:${loc.range.start.line + 1}`,
-        location: loc
-      }));
-
-      const pick = await vscode.window.showQuickPick(items, {
-        placeHolder: `Select a usage of <${tagName}>`
-      });
-      if (pick) {
-        await vscode.window.showTextDocument(pick.location.uri, {
-          selection: pick.location.range
-        });
-      }
-    }
+    })
   );
-  context.subscriptions.push(findUsagesCommand);
+
+  // generateData
+  context.subscriptions.push(
+    vscode.commands.registerCommand('stencilNavigator.generateData', async () => {
+      try {
+        await generateDataFile(
+          root,
+          cfg.dataSaveLocation,
+          context.globalStorageUri
+        );
+        vscode.window.showInformationMessage('vscode-data.json generated!');
+      } catch (err: any) {
+        vscode.window.showErrorMessage('Failed to generate data file: ' + err.message);
+      }
+    })
+  );
+
+  // welcome
+  context.subscriptions.push(
+    vscode.commands.registerCommand('stencilNavigator.welcome', () => {
+      vscode.commands.executeCommand('workbench.action.showCommands');
+    })
+  );
+
+  // findUsages — open every candidate file as TextDocument and search there
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'stencilNavigator.findUsages',
+      async (tagName: string) => {
+        // build regex for the tag
+        const regex = new RegExp(`<${tagName}\\b`, 'g');
+        const locations: vscode.Location[] = [];
+
+        // wrap multiple globs in {} for brace expansion
+        const includeGlob = `{${cfg.filePatterns.join(',')}}`;
+        const excludeGlob = `{${cfg.excludePatterns.join(',')}}`;
+
+        console.log(`[StencilNav] scanning ${includeGlob} excluding ${excludeGlob}`);
+
+        // 1) find candidate files
+        const uris = await vscode.workspace.findFiles(includeGlob, excludeGlob);
+        console.log(`[StencilNav] found ${uris.length} files to scan`);
+
+        // 2) scan each document for matches
+        for (const uri of uris) {
+          let doc: vscode.TextDocument;
+          try {
+            doc = await vscode.workspace.openTextDocument(uri);
+          } catch {
+            continue;
+          }
+          const text = doc.getText();
+          let match: RegExpExecArray | null;
+          let fileCount = 0;
+          while ((match = regex.exec(text))) {
+            const pos = doc.positionAt(match.index);
+            locations.push(new vscode.Location(uri, pos));
+            fileCount++;
+          }
+          if (fileCount) {
+            console.log(
+              `[StencilNav] → ${path.relative(root, uri.fsPath)}: ${fileCount} match(es)`
+            );
+          }
+        }
+
+        console.log(`[StencilNav] total usages found: ${locations.length}`);
+
+        if (locations.length === 0) {
+          vscode.window.showInformationMessage(`No usages of <${tagName}> found.`);
+          return;
+        }
+
+        // 3) open the component file and set cursor at the tag declaration
+        const relPath = tagMap.get(tagName)!;
+        const compUri = vscode.Uri.file(path.join(root, relPath));
+        const compDoc = await vscode.workspace.openTextDocument(compUri);
+        const compEditor = await vscode.window.showTextDocument(compDoc);
+        const declIdx = compDoc.getText().indexOf(`<${tagName}`);
+        const declPos =
+          declIdx >= 0 ? compDoc.positionAt(declIdx) : new vscode.Position(0, 0);
+        compEditor.selection = new vscode.Selection(declPos, declPos);
+
+        // 4) show the standard References UI with our locations
+        await vscode.commands.executeCommand(
+          'editor.action.showReferences',
+          compUri,
+          declPos,
+          locations
+        );
+      }
+    )
+  );
 }

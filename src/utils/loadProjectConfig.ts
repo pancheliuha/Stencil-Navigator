@@ -1,54 +1,89 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as vscode from 'vscode';
+
+export interface ExtensionFeatures {
+  definition: boolean;
+  links: boolean;
+  hover: boolean;
+  completion: boolean;
+  methods: boolean;
+  slots: boolean;
+  findUsages: boolean;
+  welcomePanel: boolean;
+  enterTrigger: boolean;
+}
 
 export interface ProjectConfig {
-  features: {
-    definition: boolean;
-    hover: boolean;
-    completion: boolean;
-    links: boolean;
-    enterTrigger: boolean;
-    welcomePanel: boolean;
-  };
+  dataSaveLocation: 'projectRoot' | 'extensionStorage';
   filePatterns: string[];
   excludePatterns: string[];
   completionTriggers: string[];
   sortPrefix: string;
-  dataSaveLocation: 'projectRoot' | 'extensionStorage';
+  features: ExtensionFeatures;
 }
 
 const DEFAULT_CONFIG: ProjectConfig = {
+  dataSaveLocation: 'projectRoot',
+  filePatterns: ['src/components/**/*.tsx', 'src/**/*.tsx'],
+  excludePatterns: ['node_modules/**', 'dist/**'],
+  completionTriggers: [' ', ':'],
+  sortPrefix: '!',
   features: {
     definition: true,
+    links: true,
     hover: true,
     completion: true,
-    links: true,
-    enterTrigger: true,
-    welcomePanel: true
-  },
-  filePatterns: ['**/*.{tsx,jsx,ts,js}'],
-  excludePatterns: ['node_modules/**', 'dist/**', 'build/**', 'out/**'],
-  completionTriggers: ['<', ' ', '='],
-  sortPrefix: '\u0000',
-  dataSaveLocation: 'projectRoot'
+    methods: true,
+    slots: true,
+    findUsages: true,
+    welcomePanel: true,
+    enterTrigger: false
+  }
 };
 
 export function loadProjectConfig(root: string): ProjectConfig {
-  const jsonPath = path.join(root, 'stencil-navigator.config.json');
-  if (!fs.existsSync(jsonPath)) {
+  const configFile = path.join(root, 'stencil-navigator.config.json');
+  if (!fs.existsSync(configFile)) {
     return DEFAULT_CONFIG;
   }
 
   try {
-    const raw = fs.readFileSync(jsonPath, { encoding: 'utf8' });
-    const user = JSON.parse(raw);
-    return {
-      ...DEFAULT_CONFIG,
-      ...user,
-      features: { ...DEFAULT_CONFIG.features, ...user.features }
-    };
+    const raw = fs.readFileSync(configFile, 'utf-8');
+    const userCfg = JSON.parse(raw) as Partial<ProjectConfig>;
+    return mergeConfig(DEFAULT_CONFIG, userCfg);
   } catch (e) {
-    console.warn('[StencilNav] Failed to load stencil-navigator.config.json:', e);
+    vscode.window.showWarningMessage(
+      'Failed to parse stencil-navigator.config.json, using defaults.'
+    );
     return DEFAULT_CONFIG;
   }
+}
+
+function mergeConfig(
+  base: ProjectConfig,
+  override: Partial<ProjectConfig>
+): ProjectConfig {
+  const merged: any = { ...base };
+
+  if (override.dataSaveLocation) {
+    merged.dataSaveLocation = override.dataSaveLocation;
+  }
+  if (Array.isArray(override.filePatterns)) {
+    merged.filePatterns = override.filePatterns;
+  }
+  if (Array.isArray(override.excludePatterns)) {
+    merged.excludePatterns = override.excludePatterns;
+  }
+  if (Array.isArray(override.completionTriggers)) {
+    merged.completionTriggers = override.completionTriggers;
+  }
+  if (typeof override.sortPrefix === 'string') {
+    merged.sortPrefix = override.sortPrefix;
+  }
+  if (override.features) {
+    merged.features = { ...base.features, ...override.features };
+  }
+
+  return merged as ProjectConfig;
 }

@@ -6,19 +6,20 @@ export function registerUsageProvider(
   root: string,
   tagMap: Map<string, string>
 ) {
-  // Provides a CodeLens at the top of component files for "Find Usages"
-  const codeLensProvider: vscode.CodeLensProvider = {
-    provideCodeLenses(document: vscode.TextDocument): vscode.CodeLens[] {
-      // compute relative path of current document
-      const rel = path.relative(root, document.uri.fsPath);
-      // find the tag that corresponds to this file
-      const entry = Array.from(tagMap.entries()).find(([, p]) => p === rel);
-      if (!entry) {
+  const provider: vscode.CodeLensProvider = {
+    provideCodeLenses(document) {
+      // Searching for a line in the file with @Component({ tag: '…' })
+      const text = document.getText();
+      const match = /@Component\(\s*\{\s*tag\s*:\s*['"]([^'"]+)['"]/m.exec(text);
+      if (!match) {
         return [];
       }
-      const [tagName] = entry;
-      // place the CodeLens at line 0
-      const range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
+      const tagName = match[1];
+      // Find the position of the decorator
+      const offset = match.index;
+      const position = document.positionAt(offset);
+      const range = new vscode.Range(position, position);
+
       const cmd: vscode.Command = {
         title: `🔍 Find <${tagName}> usages`,
         command: 'stencilNavigator.findUsages',
@@ -31,7 +32,7 @@ export function registerUsageProvider(
   context.subscriptions.push(
     vscode.languages.registerCodeLensProvider(
       { scheme: 'file', pattern: '**/*.tsx' },
-      codeLensProvider
+      provider
     )
   );
 }

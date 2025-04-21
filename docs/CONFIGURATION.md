@@ -1,49 +1,43 @@
 # Configuration Reference
 
-Stencil Navigator supports two ways to configure:
-
-1. **Project‑level file**  
-   Create `stencil-navigator.config.json` at your project root.
-
-2. **VS Code Settings**  
-   Under the `stencilNavigator` section in User or Workspace settings.
-
----
-
-## `stencil-navigator.config.json`
+You can override defaults by adding `stencil-navigator.config.json` to your project root:
 
 ```jsonc
 {
-  "dataSaveLocation": "projectRoot",    // or "extensionStorage"
-  "completionTriggers": [" ", ":"],     // which chars trigger autocomplete
-  "sortPrefix": "!",                    // prefix to order completion groups
+  "filePatterns": [
+    "src/components/**/*.tsx",
+    "src/pages/**/*.{tsx,jsx,html}"
+  ],
+  "excludePatterns": [
+    "node_modules/**",
+    "dist/**"
+  ],
+  "dataSaveLocation": "extensionStorage",
+  "completionTriggers": [" ", "<", "/"],
+  "sortPrefix": "0",
   "features": {
     "definition": true,
-    "completion": true,
     "hover": true,
+    "completion": true,
     "links": true,
-    "slots": true,
-    "methods": true,
     "findUsages": true,
-    "outline": false
+    "welcomePanel": true,
+    "enterTrigger": false
   }
 }
 ```
 
-| Property               | Type                   | Default        | Description                                 |
-| ---------------------- | ---------------------- | -------------- | ------------------------------------------- |
-| `dataSaveLocation`     | `"projectRoot"|...`     | `"projectRoot"`| Where to save `vscode-data.json`.           |
-| `completionTriggers`   | `string[]`             | `[" ", ":"]`   | Characters that invoke autocomplete.        |
-| `sortPrefix`           | `string`               | `"!"`          | Prefix to force ordering in completion.     |
-| `features`             | `object`               | (see above)    | Toggle each feature on/off.                 |
-
----
-
-## VS Code Settings
-
-```jsonc
-{
-  "stencilNavigator.dataSaveLocation": "extensionStorage",
-  "stencilNavigator.completionTriggers": [" ", ":"],
-  "stencilNavigator.features.slots": false
-}
+| Property                  | Type                               | Default                                  | Description                                                                     |
+|---------------------------|------------------------------------|------------------------------------------|---------------------------------------------------------------------------------|
+| `filePatterns`            | `string[]`                         | `["src/components/**/*.tsx"]`            | Glob(s) for files to include when scanning.                                     |
+| `excludePatterns`         | `string[]`                         | `["node_modules/**","dist/**"]`          | Glob(s) for files to exclude from scanning.                                     |
+| `dataSaveLocation`        | `"projectRoot" \| "extensionStorage"` | `"projectRoot"`                          | Where to write `vscode-data.json`.                                              |
+| `completionTriggers`      | `string[]`                         | `[" ", "<", "/"]`                        | Characters that trigger attribute completion.                                   |
+| `sortPrefix`              | `string`                           | `"0"`                                    | Prefix used to sort tag suggestions before props.                               |
+| `features`.<br>`definition` | `boolean`                       | `true`                                   | Enable Go to Definition.                                                        |
+| `features`.<br>`hover`      | `boolean`                         | `true`                                   | Enable Hover tooltips.                                                          |
+| `features`.<br>`completion` | `boolean`                       | `true`                                   | Enable IntelliSense for tags/props/events/methods/slots.                        |
+| `features`.<br>`links`      | `boolean`                         | `true`                                   | Enable clickable Document Links in markup.                                      |
+| `features`.<br>`findUsages` | `boolean`                       | `true`                                   | Enable CodeLens “Find Usages” feature.                                          |
+| `features`.<br>`welcomePanel` | `boolean`                     | `true`                                   | Show welcome panel on first activation.                                         |
+| `features`.<br>`enterTrigger` | `boolean`                      | `false`                                  | Trigger attribute completion when pressing Enter.                               |

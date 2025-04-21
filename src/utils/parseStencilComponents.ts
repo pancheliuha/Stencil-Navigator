@@ -40,10 +40,8 @@ export interface ComponentTag {
 export async function parseStencilComponents(
   root: string
 ): Promise<{ json: { version: number; tags: ComponentTag[] }; tagMap: Map<string, string> }> {
-  // Load include/exclude patterns
   const { filePatterns, excludePatterns } = loadProjectConfig(root);
 
-  // Prepare ts-morph project options
   const tsconfigPath = path.join(root, 'tsconfig.json');
   const projectOptions: any = { skipAddingFilesFromTsConfig: true };
   if (fs.existsSync(tsconfigPath)) {
@@ -53,7 +51,7 @@ export async function parseStencilComponents(
   }
   const project = new Project(projectOptions);
 
-  // Add source files according to patterns
+  // add according to globs in config
   const globs = [
     ...filePatterns.map(p => path.join(root, p)),
     ...excludePatterns.map(p => '!' + path.join(root, p))
@@ -65,25 +63,22 @@ export async function parseStencilComponents(
 
   for (const file of project.getSourceFiles()) {
     for (const cls of file.getClasses()) {
-      // Only classes decorated with @Component
       const compDeco = cls.getDecorator('Component');
       if (!compDeco) continue;
 
-      // Extract tag name literal
       const obj = compDeco.getArguments()[0]?.asKind(SyntaxKind.ObjectLiteralExpression);
       const tagProp = obj?.getProperty('tag')?.asKind(SyntaxKind.PropertyAssignment);
       const tagInit = tagProp?.getInitializer()?.getText();
       if (!tagInit) continue;
       const tagName = tagInit.replace(/['"`]/g, '').trim();
 
-      // Class JSDoc description
       const classDoc = cls
         .getJsDocs()
         .map(d => d.getInnerText().trim())
         .filter(Boolean)
         .join('\n');
 
-      // @Prop() properties
+      // props
       const properties: ComponentProp[] = cls
         .getProperties()
         .filter(p => !!p.getDecorator('Prop'))
@@ -94,13 +89,12 @@ export async function parseStencilComponents(
             .map(d => d.getInnerText().trim())
             .filter(Boolean)
             .join('\n');
-          // try to read TS type
           const typeNode = p.getTypeNode();
           const type = typeNode ? typeNode.getText() : p.getType().getText();
           return { name, description, type };
         });
 
-      // @Event() events
+      // events
       const events: ComponentEvent[] = cls
         .getProperties()
         .filter(p => !!p.getDecorator('Event'))
@@ -112,22 +106,17 @@ export async function parseStencilComponents(
             .map(d => d.getInnerText().trim())
             .filter(Boolean)
             .join('\n');
-          // extract generic payload type if present
+          let type: string|undefined;
           const deco = p.getDecorator('Event')!;
-          const args = deco.getArguments();
-          let type: string | undefined;
-          if (args.length) {
-            // e.g. @Event<MyPayload>()
-            const call = deco.getCallExpression();
-            const typeArgs = call?.getTypeArguments();
-            if (typeArgs && typeArgs.length) {
-              type = typeArgs[0].getText();
-            }
+          const call = deco.getCallExpression();
+          const typeArgs = call?.getTypeArguments();
+          if (typeArgs && typeArgs.length) {
+            type = typeArgs[0].getText();
           }
           return { name, description, type };
         });
 
-      // @Method() methods
+      // methods
       const methods: ComponentMethod[] = cls
         .getMethods()
         .filter(m => !!m.getDecorator('Method'))
@@ -138,34 +127,29 @@ export async function parseStencilComponents(
             .map(d => d.getInnerText().trim())
             .filter(Boolean)
             .join('\n');
-          // method signature with parameters and return type
           const signature = m.getText().match(/^[^{]*/)?.[0].trim();
           return { name, description, signature };
         });
 
-      // @Slot() slots
-      const slots: ComponentSlot[] = cls
-        .getProperties()
-        .filter(p => !!p.getDecorator('Slot'))
-        .map(p => {
-          let slotName = p.getName();
-          const deco = p.getDecorator('Slot')!;
-          const args = deco.getArguments();
-          if (args.length) {
-            const objLit = args[0].asKind(SyntaxKind.ObjectLiteralExpression);
-            const nameProp = objLit?.getProperty('name')?.asKind(SyntaxKind.PropertyAssignment);
-            const init = nameProp?.getInitializer()?.getText();
-            if (init) {
-              slotName = init.replace(/['"`]/g, '').trim();
-            }
-          }
-          const description = p
-            .getJsDocs()
-            .map(d => d.getInnerText().trim())
-            .filter(Boolean)
-            .join('\n');
-          return { name: slotName, description };
-        });
+      // slots via JSX <slot> tags
+      const slots: ComponentSlot[] = [];
+      const slotEls = [
+        ...file.getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement),
+        ...file.getDescendantsOfKind(SyntaxKind.JsxOpeningElement)
+      ].filter(el => el.getTagNameNode().getText() === 'slot');
+      for (const el of slotEls) {
+        let slotName = '';
+        const nameAttr = el.getAttribute('name');
+        if (nameAttr) {
+          const lit = nameAttr.getFirstChildByKind(SyntaxKind.StringLiteral);
+          if (lit) slotName = lit.getLiteralValue();
+        }
+        slots.push({ name: slotName, description: '' });
+      }
+      // dedupe
+      const uniqueSlots = Array.from(
+        new Map(slots.map(s => [s.name, s])).values()
+      );
 
       const relPath = path.relative(root, file.getFilePath());
       tags.push({
@@ -175,14 +159,11 @@ export async function parseStencilComponents(
         properties,
         events,
         methods,
-        slots
+        slots: uniqueSlots
       });
       tagMap.set(tagName, relPath);
     }
   }
 
-  return {
-    json: { version: 1.1, tags },
-    tagMap
-  };
+  return { json: { version: 1.1, tags }, tagMap };
 }

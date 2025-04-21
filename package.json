@@ -2,7 +2,7 @@
   "name": "stencil-navigator",
   "displayName": "Stencil Navigator",
   "publisher": "ViktorPancheliuha",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/pancheliuha/Stencil-Navigator.git"
@@ -33,6 +33,86 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "Stencil Navigator Configuration",
+      "properties": {
+        "stencilNavigator.dataSaveLocation": {
+          "type": "string",
+          "enum": ["projectRoot", "extensionStorage"],
+          "default": "projectRoot",
+          "description": "Where to save generated vscode-data.json"
+        },
+        "stencilNavigator.filePatterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["src/components/**/*.tsx", "src/**/*.tsx"],
+          "description": "Glob patterns for files to scan for components."
+        },
+        "stencilNavigator.excludePatterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["node_modules/**", "dist/**"],
+          "description": "Glob patterns of files/directories to exclude from scan."
+        },
+        "stencilNavigator.completionTriggers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [" ", ":"],
+          "description": "Characters that trigger attribute autocomplete"
+        },
+        "stencilNavigator.sortPrefix": {
+          "type": "string",
+          "default": "!",
+          "description": "Prefix to force ordering in completion list"
+        },
+        "stencilNavigator.features.definition": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Go to Definition"
+        },
+        "stencilNavigator.features.links": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Document Links"
+        },
+        "stencilNavigator.features.hover": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Hover tooltips"
+        },
+        "stencilNavigator.features.completion": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Props/Events/Slots autocomplete"
+        },
+        "stencilNavigator.features.methods": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable `@Method()` autocomplete"
+        },
+        "stencilNavigator.features.slots": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable `@Slot()` autocomplete"
+        },
+        "stencilNavigator.features.findUsages": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Find Usages CodeLens"
+        },
+        "stencilNavigator.features.welcomePanel": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show welcome panel on first install"
+        },
+        "stencilNavigator.features.enterTrigger": {
+          "type": "boolean",
+          "default": false,
+          "description": "Trigger autocomplete on Enter key"
+        }
+      }
+    },
     "commands": [
       {
         "command": "stencilNavigator.reloadTags",

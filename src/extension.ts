@@ -1,97 +1,80 @@
 import * as vscode from 'vscode';
-
-// utils
 import { loadProjectConfig } from './utils/loadProjectConfig';
-import { generateDataFile }  from './utils/generateData';
-import { stencilSelector }   from './utils/selectors';
-import * as logger           from './utils/logger';
+import { generateDataFile } from './utils/generateData';
+import { parseStencilComponents } from './utils/parseStencilComponents';
+import * as logger from './utils/logger';
 
 // providers
-import * as providers from './providers';
+import { registerDefinitionProvider } from './providers/definitionProvider';
+import { registerLinkProvider } from './providers/linkProvider';
+import { registerHoverProvider } from './providers/hoverProvider';
+import { registerCompletionProvider } from './providers/completionProvider';
+import { registerUsageProvider } from './providers/usageProvider';
 
 // commands & panels
-import { registerCommands }  from './commands/registerCommands';
-import { showWelcomePanel }  from './panels/welcomePanel';
-
-// optional utilities
-import { registerEnterTrigger } from './utils/enterTrigger';
+import { registerCommands } from './commands/registerCommands';
+import { showWelcomePanel } from './panels/welcomePanel';
 
 export async function activate(context: vscode.ExtensionContext) {
+  // 1) Determine workspace root and load config
   const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
   const cfg  = loadProjectConfig(root);
+  logger.info('[StencilNav] Activating with config:', cfg);
 
-  logger.info('Activating with config:', cfg);
-
-  // generate or reload JSON + tagMap
-  const { json, tagMap } = await generateDataFile(
+  // 2) Generate or reload metadata (vscode-data.json, tagMap)
+  let { json, tagMap } = await generateDataFile(
     root,
     cfg.dataSaveLocation,
     context.globalStorageUri
   );
 
-  // Go to Definition
-  if (cfg.features.definition) {
-    providers.registerDefinitionProvider(context, root, tagMap);
-    logger.info('DefinitionProvider registered');
+  // 3) Watch for component file changes according to config.filePatterns
+  const watchers = cfg.filePatterns.map(pattern =>
+    vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(root, pattern)
+    )
+  );
+  const reloadMetadata = async () => {
+    const result = await parseStencilComponents(root);
+    json.tags = result.json.tags;
+    tagMap.clear();
+    for (const [tag, rel] of result.tagMap) {
+      tagMap.set(tag, rel);
+    }
+    logger.info('[StencilNav] Metadata reloaded');
+  };
+  for (const w of watchers) {
+    w.onDidCreate(reloadMetadata);
+    w.onDidChange(reloadMetadata);
+    w.onDidDelete(reloadMetadata);
+    context.subscriptions.push(w);
   }
 
-  // Document Links (underline & click)
-  if (cfg.features.links) {
-    providers.registerLinkProvider(context, root, tagMap);
-    logger.info('LinkProvider registered');
-  }
+  // 4) Register all feature providers
+  registerDefinitionProvider(context, root, tagMap);
+  registerLinkProvider(context, root, tagMap);
+  registerHoverProvider(context, root, json, tagMap);
+  registerCompletionProvider(
+    context,
+    json,
+    tagMap,
+    cfg.completionTriggers,
+    cfg.sortPrefix
+  );
+  registerUsageProvider(context, root, tagMap);
 
-  // Hover tooltips
-  if (cfg.features.hover) {
-    providers.registerHoverProvider(context, root, json, tagMap);
-    logger.info('HoverProvider registered');
-  }
-
-  // IntelliSense: tags, props/events/slots
-  if (cfg.features.completion) {
-    providers.registerCompletionProvider(
-      context,
-      json,
-      tagMap,
-      cfg.completionTriggers,
-      cfg.sortPrefix
-    );
-    providers.registerMethodCompletionProvider(
-      context,
-      json,
-      tagMap,
-      cfg.sortPrefix
-    );
-    logger.info('CompletionProviders registered');
-  }
-
-  // CodeLens: Find Usages
-  if (cfg.features.links) {
-    providers.registerUsageProvider(context, root, tagMap);
-    logger.info('UsageProvider registered');
-  }
-
-  // optional “Enter”‑key trigger for completions
-  if (cfg.features.enterTrigger) {
-    registerEnterTrigger(context);
-    logger.info('EnterTrigger registered');
-  }
-
-  // Commands (reload, generate, welcome, findUsages)
+  // 5) Register commands (reload, generate, findUsages, etc.)
   registerCommands(context, root, tagMap);
-  logger.info('Commands registered');
+  logger.info('[StencilNav] Commands registered');
 
-  // One‑time welcome panel
-  if (
-    cfg.features.welcomePanel &&
-    !context.globalState.get('stencilNav.welcomeShown')
-  ) {
+  // 6) Show welcome panel on first activation (if enabled)
+  if (cfg.features.welcomePanel && !context.globalState.get('stencilNav.welcomeShown')) {
     showWelcomePanel(context.extensionUri);
     context.globalState.update('stencilNav.welcomeShown', true);
-    logger.info('WelcomePanel shown');
+    logger.info('[StencilNav] Welcome panel shown');
   }
 }
 
 export function deactivate() {
-  logger.info('Deactivating');
+  logger.info('[StencilNav] Deactivating extension');
 }
