@@ -11,6 +11,8 @@ export async function generateDataFile(
   const { json, tagMap } = await parseStencilComponents(root);
   let outUri: vscode.Uri;
 
+  console.log('Data save location:', dataSaveLocation);
+
   if (dataSaveLocation === 'projectRoot') {
     outUri = vscode.Uri.file(path.join(root, 'vscode-data.json'));
   } else {

@@ -81,7 +81,7 @@ _For advanced configuration see [CONFIGURATION](./docs/CONFIGURATION.md)._
 |-------------------------------------------|------------|------------------------------------------------------|
 | `stencilNavigator.filePatterns`           | `["src/components/**/*.tsx"]` | Glob patterns to include when scanning files.        |
 | `stencilNavigator.excludePatterns`        | `["node_modules/**","dist/**"]` | Glob patterns to exclude from scan.                  |
-| `stencilNavigator.dataSaveLocation`       | `"projectRoot"` | Where to write `vscode-data.json` (`projectRoot` or `extensionStorage`). |
+| `stencilNavigator.dataSaveLocation`       | `"extensionStorage"` | Where to write `vscode-data.json` (`projectRoot` or `extensionStorage`). |
 | `stencilNavigator.completionTriggers`     | `[" ","<","/"]` | Characters that trigger prop/event/slot completions. |
 | `stencilNavigator.sortPrefix`             | `"0"`      | Prefix to enforce sorting of tag vs props.           |
 | `stencilNavigator.features`               | **all on** | Enable or disable specific features (see docs).      |
@@ -98,7 +98,7 @@ You can create a `stencil-navigator.config.json` in your project root:
     "node_modules/**",
     "dist/**"
   ],
-  "dataSaveLocation": "projectRoot",
+  "dataSaveLocation": "extensionStorage",
   "completionTriggers": [" ", "<", "/"],
   "sortPrefix": "0",
   "features": {
@@ -108,7 +108,7 @@ You can create a `stencil-navigator.config.json` in your project root:
     "links": true,
     "findUsages": true,
     "welcomePanel": true,
-    "enterTrigger": false
+    "enterTrigger": true
   }
 }
 ```

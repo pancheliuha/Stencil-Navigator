@@ -1,5 +1,3 @@
-// src/utils/enterTrigger.ts
-
 import * as vscode from 'vscode';
 
 export function registerEnterTrigger(context: vscode.ExtensionContext) {

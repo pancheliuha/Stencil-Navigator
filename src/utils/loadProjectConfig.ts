@@ -24,7 +24,7 @@ export interface ProjectConfig {
 }
 
 const DEFAULT_CONFIG: ProjectConfig = {
-  dataSaveLocation: 'projectRoot',
+  dataSaveLocation: 'extensionStorage',
   filePatterns: ['src/components/**/*.tsx', 'src/**/*.tsx'],
   excludePatterns: ['node_modules/**', 'dist/**'],
   completionTriggers: [' ', ':'],
@@ -38,13 +38,14 @@ const DEFAULT_CONFIG: ProjectConfig = {
     slots: true,
     findUsages: true,
     welcomePanel: true,
-    enterTrigger: false
+    enterTrigger: true
   }
 };
 
 export function loadProjectConfig(root: string): ProjectConfig {
   const configFile = path.join(root, 'stencil-navigator.config.json');
   if (!fs.existsSync(configFile)) {
+    console.log('Default config:', { DEFAULT_CONFIG })
     return DEFAULT_CONFIG;
   }
 

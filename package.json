@@ -2,7 +2,7 @@
   "name": "stencil-navigator",
   "displayName": "Stencil Navigator",
   "publisher": "ViktorPancheliuha",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/pancheliuha/Stencil-Navigator.git"
@@ -43,7 +43,7 @@
             "projectRoot",
             "extensionStorage"
           ],
-          "default": "projectRoot",
+          "default": "extensionStorage",
           "description": "Where to save generated vscode-data.json"
         },
         "stencilNavigator.filePatterns": {
@@ -121,7 +121,7 @@
             },
             "enterTrigger": {
               "type": "boolean",
-              "default": false
+              "default": true
             }
           }
         }

@@ -22,7 +22,7 @@ You can override defaults by adding `stencil-navigator.config.json` to your proj
     "links": true,
     "findUsages": true,
     "welcomePanel": true,
-    "enterTrigger": false
+    "enterTrigger": true
   }
 }
 ```
@@ -31,7 +31,7 @@ You can override defaults by adding `stencil-navigator.config.json` to your proj
 |---------------------------|------------------------------------|------------------------------------------|---------------------------------------------------------------------------------|
 | `filePatterns`            | `string[]`                         | `["src/components/**/*.tsx"]`            | Glob(s) for files to include when scanning.                                     |
 | `excludePatterns`         | `string[]`                         | `["node_modules/**","dist/**"]`          | Glob(s) for files to exclude from scanning.                                     |
-| `dataSaveLocation`        | `"projectRoot" \| "extensionStorage"` | `"projectRoot"`                          | Where to write `vscode-data.json`.                                              |
+| `dataSaveLocation`        | `"projectRoot" \| "extensionStorage"` | `"extensionStorage"`                          | Where to write `vscode-data.json`.                                              |
 | `completionTriggers`      | `string[]`                         | `[" ", "<", "/"]`                        | Characters that trigger attribute completion.                                   |
 | `sortPrefix`              | `string`                           | `"0"`                                    | Prefix used to sort tag suggestions before props.                               |
 | `features`.<br>`definition` | `boolean`                       | `true`                                   | Enable Go to Definition.                                                        |
@@ -40,4 +40,4 @@ You can override defaults by adding `stencil-navigator.config.json` to your proj
 | `features`.<br>`links`      | `boolean`                         | `true`                                   | Enable clickable Document Links in markup.                                      |
 | `features`.<br>`findUsages` | `boolean`                       | `true`                                   | Enable CodeLens “Find Usages” feature.                                          |
 | `features`.<br>`welcomePanel` | `boolean`                     | `true`                                   | Show welcome panel on first activation.                                         |
-| `features`.<br>`enterTrigger` | `boolean`                      | `false`                                  | Trigger attribute completion when pressing Enter.                               |
+| `features`.<br>`enterTrigger` | `boolean`                      | `true`                                  | Trigger attribute completion when pressing Enter.                               |
