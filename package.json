@@ -2,13 +2,13 @@
   "name": "stencil-navigator",
   "displayName": "Stencil Navigator",
   "publisher": "ViktorPancheliuha",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "repository": {
     "type": "git",
     "url": "https://github.com/pancheliuha/Stencil-Navigator.git"
   },
   "engines": {
-    "vscode": "^1.99.0"
+    "vscode": "^1.96.0"
   },
   "icon": "images/icon.png",
   "categories": [
@@ -160,7 +160,7 @@
     "@types/mocha": "^9.0.0",
     "@types/node": "^18.0.0",
     "@types/sinon": "^10.0.4",
-    "@types/vscode": "^1.99.0",
+    "@types/vscode": "^1.96.0",
     "@vscode/test-electron": "^2.0.0",
     "chai": "^4.3.4",
     "mocha": "^9.0.0",
